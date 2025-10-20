@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Online PDF Editor</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.6.347/pdf.min.js"></script>
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+</head>
+<body>
+    <header>
+        <h1>Online PDF Editor</h1>
+    </header>
+    <main>
+        <div id="pdf-viewer-container">
+            <input type="file" id="file-input" accept="application/pdf">
+            <button id="add-page-btn">Add Page</button>
+            <button id="download-btn">Download</button>
+            <div id="pdf-viewer"></div>
+        </div>
+    </main>
+    <script src="app.js"></script>
+</body>
+</html>
