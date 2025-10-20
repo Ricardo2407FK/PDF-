@@ -3,40 +3,58 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Online PDF Editor</title>
+    <title>Pro PDF Editor</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.6.347/pdf.min.js"></script>
     <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js"></script>
 </head>
 <body>
-    <header>
-        <h1>Online PDF Editor</h1>
-    </header>
-    <div id="toolbar">
-        <button id="add-text-btn">Add Text</button>
-        <input type="text" id="text-input" placeholder="Enter text here">
-        <select id="font-select">
-            <option value="Helvetica">Helvetica</option>
-            <option value="TimesRoman">Times New Roman</option>
-            <option value="Courier">Courier</option>
-        </select>
-        <input type="number" id="font-size-input" value="12">
-        <input type="color" id="font-color-input" value="#000000">
-        <button id="save-text-btn">Save Text</button>
-        <button id="delete-text-btn">Delete</button>
-        <button id="add-image-btn">Add Image</button>
-        <input type="file" id="image-input" accept="image/jpeg, image/png" style="display: none;">
-        <button id="save-images-btn">Save Images</button>
-    </div>
-    <main>
-        <div id="pdf-viewer-container">
-            <input type="file" id="file-input" accept="application/pdf">
-            <button id="add-page-btn">Add Page</button>
-            <button id="download-btn">Download</button>
-            <div id="pdf-viewer"></div>
+    <div id="app-container">
+        <header id="main-toolbar">
+            <div class="toolbar-section">
+                <button id="upload-btn" class="toolbar-button" title="Upload PDF"><i class="fas fa-upload"></i></button>
+                <input type="file" id="file-input" accept="application/pdf" style="display: none;">
+                <button id="download-btn" class="toolbar-button" title="Download PDF"><i class="fas fa-download"></i></button>
+            </div>
+            <h1 id="app-title">Pro PDF Editor</h1>
+            <div class="toolbar-section">
+                <button id="add-page-btn" class="toolbar-button" title="Add Page"><i class="fas fa-plus-square"></i></button>
+            </div>
+        </header>
+
+        <div id="content-area">
+            <aside id="vertical-toolbar">
+                <button id="add-text-btn" class="toolbar-button" title="Add Text"><i class="fas fa-font"></i></button>
+                <button id="add-image-btn" class="toolbar-button" title="Add Image"><i class="fas fa-image"></i></button>
+                <input type="file" id="image-input" accept="image/jpeg, image/png" style="display: none;">
+            </aside>
+
+            <main id="viewer-container">
+                <div id="context-toolbar" class="hidden">
+                    <!-- Text Controls -->
+                    <div id="text-controls" class="context-controls hidden">
+                        <input type="text" id="text-input" placeholder="Enter text">
+                        <select id="font-select">
+                            <option value="Helvetica">Helvetica</option>
+                            <option value="TimesRoman">Times New Roman</option>
+                            <option value="Courier">Courier</option>
+                        </select>
+                        <input type="number" id="font-size-input" value="12" min="1">
+                        <input type="color" id="font-color-input" value="#000000">
+                        <button id="save-text-btn" class="toolbar-button"><i class="fas fa-save"></i></button>
+                        <button id="delete-text-btn" class="toolbar-button"><i class="fas fa-trash"></i></button>
+                    </div>
+                    <!-- Image Controls -->
+                    <div id="image-controls" class="context-controls hidden">
+                        <button id="save-images-btn" class="toolbar-button"><i class="fas fa-save"></i></button>
+                    </div>
+                </div>
+                <div id="pdf-viewer"></div>
+            </main>
         </div>
-    </main>
+    </div>
     <script src="app.js"></script>
 </body>
 </html>

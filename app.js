@@ -9,6 +9,10 @@ let offsetX, offsetY;
 let textElementsState = [];
 let imageElementsState = [];
 
+document.getElementById('upload-btn').addEventListener('click', () => {
+    document.getElementById('file-input').click();
+});
+
 document.getElementById('file-input').addEventListener('change', (event) => {
     const file = event.target.files[0];
     if (file && file.type === 'application/pdf') {
@@ -57,6 +61,7 @@ document.getElementById('download-btn').addEventListener('click', () => {
 
 document.getElementById('add-text-btn').addEventListener('click', () => {
     textAddMode = !textAddMode;
+    updateContextToolbar();
 });
 
 document.getElementById('add-image-btn').addEventListener('click', () => {
@@ -68,6 +73,7 @@ document.getElementById('image-input').addEventListener('change', (event) => {
     if (file && (file.type === 'image/jpeg' || file.type === 'image/png')) {
         const reader = new FileReader();
         reader.onload = function(e) {
+            updateContextToolbar('image');
             const id = `image-${Date.now()}`;
             const image = {
                 id,
@@ -264,6 +270,25 @@ document.getElementById('save-images-btn').addEventListener('click', async () =>
     imageElementsState = []; // Clear the state after saving
     renderPdf(currentPdfBytes);
 });
+
+function updateContextToolbar(activeTool = null) {
+    const contextToolbar = document.getElementById('context-toolbar');
+    const textControls = document.getElementById('text-controls');
+    const imageControls = document.getElementById('image-controls');
+
+    // Hide all controls by default
+    textControls.classList.add('hidden');
+    imageControls.classList.add('hidden');
+    contextToolbar.classList.add('hidden');
+
+    if (textAddMode) {
+        textControls.classList.remove('hidden');
+        contextToolbar.classList.remove('hidden');
+    } else if (activeTool === 'image') {
+        imageControls.classList.remove('hidden');
+        contextToolbar.classList.remove('hidden');
+    }
+}
 
 function renderImageElements() {
     const overlays = document.querySelectorAll('.text-overlay');

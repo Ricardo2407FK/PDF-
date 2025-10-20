@@ -1,43 +1,122 @@
+:root {
+    --primary-bg: #F5F7FA;
+    --secondary-bg: #FFFFFF;
+    --toolbar-bg: #34495E;
+    --hover-bg: #4A6572;
+    --text-light: #FFFFFF;
+    --text-dark: #2C3E50;
+    --border-color: #DDE1E6;
+}
+
 body {
-    font-family: sans-serif;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     margin: 0;
-    background-color: #f4f4f4;
+    background-color: var(--primary-bg);
+    color: var(--text-dark);
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
 }
 
-header {
-    background-color: #333;
-    color: white;
-    padding: 1rem;
-    text-align: center;
+#app-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
 }
 
-main {
-    padding: 1rem;
+/* Main Toolbar */
+#main-toolbar {
+    background-color: var(--toolbar-bg);
+    color: var(--text-light);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-#toolbar {
-    background-color: #eee;
-    padding: 1rem;
-    border-bottom: 1px solid #ccc;
+#app-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.toolbar-section {
     display: flex;
     align-items: center;
 }
 
-#toolbar > * {
-    margin-right: 1rem;
+.toolbar-button {
+    background: none;
+    border: none;
+    color: var(--text-light);
+    font-size: 1.2rem;
+    padding: 15px;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
 }
 
-#pdf-viewer-container {
-    width: 80%;
-    margin: 0 auto;
-    border: 1px solid #ccc;
-    padding: 1rem;
-    background-color: white;
+.toolbar-button:hover {
+    background-color: var(--hover-bg);
+}
+
+/* Content Area */
+#content-area {
+    display: flex;
+    flex-grow: 1;
+    overflow: hidden;
+}
+
+/* Vertical Toolbar */
+#vertical-toolbar {
+    background-color: var(--secondary-bg);
+    border-right: 1px solid var(--border-color);
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+}
+
+#vertical-toolbar .toolbar-button {
+    color: var(--text-dark);
+}
+
+/* Viewer Container */
+#viewer-container {
+    flex-grow: 1;
+    padding: 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Context Toolbar */
+#context-toolbar {
+    background-color: var(--secondary-bg);
+    border-bottom: 1px solid var(--border-color);
+    padding: 10px;
+    margin-bottom: 20px;
+}
+
+.context-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* PDF Viewer */
+#pdf-viewer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
 }
 
 .page-container {
     position: relative;
-    margin-bottom: 1rem;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
 }
 
 .text-overlay {
@@ -47,17 +126,28 @@ main {
     pointer-events: none;
 }
 
-.text-overlay > div {
+.text-overlay > div, .image-container {
     pointer-events: auto;
+    cursor: move;
 }
 
 .selected {
-    border: 1px dashed #000;
+    border: 2px dashed var(--toolbar-bg);
 }
 
 .delete-page-btn {
     position: absolute;
-    top: 5px;
-    right: 5px;
+    top: 10px;
+    right: 10px;
     z-index: 10;
+    background-color: rgba(255, 0, 0, 0.7);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
