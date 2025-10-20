@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.6.347/pdf.min.js"></script>
     <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js"></script>
 </head>
 <body>
     <header>
@@ -24,6 +25,9 @@
         <input type="color" id="font-color-input" value="#000000">
         <button id="save-text-btn">Save Text</button>
         <button id="delete-text-btn">Delete</button>
+        <button id="add-image-btn">Add Image</button>
+        <input type="file" id="image-input" accept="image/jpeg, image/png" style="display: none;">
+        <button id="save-images-btn">Save Images</button>
     </div>
     <main>
         <div id="pdf-viewer-container">

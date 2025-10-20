@@ -7,6 +7,7 @@ let fontCache = {};
 let selectedElement = null;
 let offsetX, offsetY;
 let textElementsState = [];
+let imageElementsState = [];
 
 document.getElementById('file-input').addEventListener('change', (event) => {
     const file = event.target.files[0];
@@ -56,6 +57,34 @@ document.getElementById('download-btn').addEventListener('click', () => {
 
 document.getElementById('add-text-btn').addEventListener('click', () => {
     textAddMode = !textAddMode;
+});
+
+document.getElementById('add-image-btn').addEventListener('click', () => {
+    document.getElementById('image-input').click();
+});
+
+document.getElementById('image-input').addEventListener('change', (event) => {
+    const file = event.target.files[0];
+    if (file && (file.type === 'image/jpeg' || file.type === 'image/png')) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const id = `image-${Date.now()}`;
+            const image = {
+                id,
+                src: e.target.result,
+                x: 0,
+                y: 0,
+                width: 200, // Default width
+                height: 'auto',
+                pageNum: 1 // Default to first page
+            };
+            imageElementsState.push(image);
+            renderImageElements();
+        }
+        reader.readAsDataURL(file);
+    } else {
+        alert('Please select a valid JPG or PNG image.');
+    }
 });
 
 document.getElementById('pdf-viewer').addEventListener('click', async (event) => {
@@ -208,6 +237,99 @@ document.getElementById('save-text-btn').addEventListener('click', async () => {
     currentPdfBytes = await pdfDoc.save();
     renderPdf(currentPdfBytes);
 });
+
+document.getElementById('save-images-btn').addEventListener('click', async () => {
+    if (!currentPdfBytes) {
+        alert("Please load a PDF first.");
+        return;
+    }
+
+    const { PDFDocument } = PDFLib;
+    const pdfDoc = await PDFDocument.load(currentPdfBytes);
+
+    for (const imageState of imageElementsState) {
+        const page = pdfDoc.getPage(imageState.pageNum - 1);
+        const imageBytes = await fetch(imageState.src).then(res => res.arrayBuffer());
+        const image = await pdfDoc.embedPng(imageBytes);
+
+        page.drawImage(image, {
+            x: imageState.x,
+            y: page.getHeight() - imageState.y - imageState.height,
+            width: imageState.width,
+            height: imageState.height,
+        });
+    }
+
+    currentPdfBytes = await pdfDoc.save();
+    imageElementsState = []; // Clear the state after saving
+    renderPdf(currentPdfBytes);
+});
+
+function renderImageElements() {
+    const overlays = document.querySelectorAll('.text-overlay');
+    overlays.forEach(overlay => {
+        // Clear only image elements
+        overlay.querySelectorAll('.image-container').forEach(el => el.remove());
+    });
+
+    for (const state of imageElementsState) {
+        const overlay = document.querySelector(`.text-overlay[data-page-number="${state.pageNum}"]`);
+        const imageContainer = document.createElement('div');
+        imageContainer.id = state.id;
+        imageContainer.className = 'image-container';
+        imageContainer.style.position = 'absolute';
+        imageContainer.style.left = `${state.x}px`;
+        imageContainer.style.top = `${state.y}px`;
+        imageContainer.style.width = `${state.width}px`;
+        imageContainer.style.height = `${state.height}`;
+
+        const img = document.createElement('img');
+        img.src = state.src;
+        img.style.width = '100%';
+        img.style.height = '100%';
+
+        imageContainer.appendChild(img);
+        overlay.appendChild(imageContainer);
+        makeDraggableAndResizable(imageContainer);
+    }
+}
+
+function makeDraggableAndResizable(element) {
+    interact(element)
+        .draggable({
+            listeners: {
+                move(event) {
+                    const target = event.target;
+                    const state = imageElementsState.find(s => s.id === target.id);
+                    state.x += event.dx;
+                    state.y += event.dy;
+                    target.style.left = `${state.x}px`;
+                    target.style.top = `${state.y}px`;
+                }
+            },
+            inertia: true,
+            modifiers: [
+                interact.modifiers.restrictRect({
+                    restriction: 'parent',
+                    endOnly: true
+                })
+            ]
+        })
+        .resizable({
+            edges: { left: true, right: true, bottom: true, top: true },
+            listeners: {
+                move(event) {
+                    const target = event.target;
+                    const state = imageElementsState.find(s => s.id === target.id);
+                    state.width = event.rect.width;
+                    state.height = event.rect.height;
+                    target.style.width = `${state.width}px`;
+                    target.style.height = `${state.height}px`;
+                }
+            },
+            inertia: true
+        });
+}
 
 function renderTextElements() {
     const overlays = document.querySelectorAll('.text-overlay');
