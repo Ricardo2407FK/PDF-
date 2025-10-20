@@ -3,6 +3,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs
 
 let currentPdfBytes = null; // This will hold the bytes of the currently loaded PDF
 let textAddMode = false;
+let drawMode = false;
 let fontCache = {};
 let selectedElement = null;
 let offsetX, offsetY;
@@ -66,6 +67,81 @@ document.getElementById('add-text-btn').addEventListener('click', () => {
 
 document.getElementById('add-image-btn').addEventListener('click', () => {
     document.getElementById('image-input').click();
+});
+
+document.getElementById('draw-btn').addEventListener('click', () => {
+    drawMode = !drawMode;
+    updateContextToolbar();
+
+    const drawingCanvases = document.querySelectorAll('.drawing-canvas');
+    drawingCanvases.forEach(canvas => {
+        canvas.style.display = drawMode ? 'block' : 'none';
+        if (drawMode) {
+            setupDrawingCanvas(canvas);
+        }
+    });
+});
+
+let drawing = false;
+let lastX, lastY;
+
+function setupDrawingCanvas(canvas) {
+    const ctx = canvas.getContext('2d');
+
+    canvas.addEventListener('mousedown', (e) => {
+        drawing = true;
+        [lastX, lastY] = [e.offsetX, e.offsetY];
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+        if (!drawing) return;
+        ctx.beginPath();
+        ctx.moveTo(lastX, lastY);
+        ctx.lineTo(e.offsetX, e.offsetY);
+        ctx.strokeStyle = document.getElementById('draw-color-input').value;
+        ctx.lineWidth = document.getElementById('draw-thickness-input').value;
+        ctx.stroke();
+        [lastX, lastY] = [e.offsetX, e.offsetY];
+    });
+
+    canvas.addEventListener('mouseup', () => drawing = false);
+    canvas.addEventListener('mouseout', () => drawing = false);
+}
+
+document.getElementById('save-draw-btn').addEventListener('click', async () => {
+    if (!currentPdfBytes) {
+        alert("Please load a PDF first.");
+        return;
+    }
+
+    const { PDFDocument } = PDFLib;
+    const pdfDoc = await PDFDocument.load(currentPdfBytes);
+
+    const drawingCanvases = document.querySelectorAll('.drawing-canvas');
+    for (const canvas of drawingCanvases) {
+        const pageNum = parseInt(canvas.dataset.pageNumber, 10);
+        const page = pdfDoc.getPage(pageNum - 1);
+
+        const pngImageBytes = await new Promise(resolve => canvas.toBlob(blob => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(new Uint8Array(reader.result));
+            reader.readAsArrayBuffer(blob);
+        }, 'image/png'));
+
+        const pngImage = await pdfDoc.embedPng(pngImageBytes);
+
+        page.drawImage(pngImage, {
+            x: 0,
+            y: 0,
+            width: page.getWidth(),
+            height: page.getHeight(),
+        });
+    }
+
+    currentPdfBytes = await pdfDoc.save();
+    drawMode = false;
+    updateContextToolbar();
+    renderPdf(currentPdfBytes);
 });
 
 document.getElementById('image-input').addEventListener('change', (event) => {
@@ -275,10 +351,12 @@ function updateContextToolbar(activeTool = null) {
     const contextToolbar = document.getElementById('context-toolbar');
     const textControls = document.getElementById('text-controls');
     const imageControls = document.getElementById('image-controls');
+    const drawControls = document.getElementById('draw-controls');
 
     // Hide all controls by default
     textControls.classList.add('hidden');
     imageControls.classList.add('hidden');
+    drawControls.classList.add('hidden');
     contextToolbar.classList.add('hidden');
 
     if (textAddMode) {
@@ -286,6 +364,9 @@ function updateContextToolbar(activeTool = null) {
         contextToolbar.classList.remove('hidden');
     } else if (activeTool === 'image') {
         imageControls.classList.remove('hidden');
+        contextToolbar.classList.remove('hidden');
+    } else if (drawMode) {
+        drawControls.classList.remove('hidden');
         contextToolbar.classList.remove('hidden');
     }
 }
@@ -413,8 +494,16 @@ function renderPdf(pdfBytes) {
                     deleteButton.textContent = 'Delete';
                     deleteButton.setAttribute('data-page-number', pageNum);
 
+                    const drawingCanvas = document.createElement('canvas');
+                    drawingCanvas.className = 'drawing-canvas';
+                    drawingCanvas.setAttribute('data-page-number', pageNum);
+                    drawingCanvas.width = viewport.width;
+                    drawingCanvas.height = viewport.height;
+                    drawingCanvas.style.display = 'none';
+
                     pageContainer.appendChild(canvas);
                     pageContainer.appendChild(textOverlay);
+                    pageContainer.appendChild(drawingCanvas);
                     pageContainer.appendChild(deleteButton);
                     viewer.appendChild(pageContainer);
 

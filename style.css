@@ -135,6 +135,14 @@ body {
     border: 2px dashed var(--toolbar-bg);
 }
 
+.drawing-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    pointer-events: auto;
+    z-index: 5;
+}
+
 .delete-page-btn {
     position: absolute;
     top: 10px;

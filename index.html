@@ -28,6 +28,7 @@
             <aside id="vertical-toolbar">
                 <button id="add-text-btn" class="toolbar-button" title="Add Text"><i class="fas fa-font"></i></button>
                 <button id="add-image-btn" class="toolbar-button" title="Add Image"><i class="fas fa-image"></i></button>
+                <button id="draw-btn" class="toolbar-button" title="Draw"><i class="fas fa-pencil-alt"></i></button>
                 <input type="file" id="image-input" accept="image/jpeg, image/png" style="display: none;">
             </aside>
 
@@ -49,6 +50,12 @@
                     <!-- Image Controls -->
                     <div id="image-controls" class="context-controls hidden">
                         <button id="save-images-btn" class="toolbar-button"><i class="fas fa-save"></i></button>
+                    </div>
+                    <!-- Drawing Controls -->
+                    <div id="draw-controls" class="context-controls hidden">
+                        <input type="color" id="draw-color-input" value="#FF0000">
+                        <input type="number" id="draw-thickness-input" value="2" min="1">
+                        <button id="save-draw-btn" class="toolbar-button"><i class="fas fa-save"></i></button>
                     </div>
                 </div>
                 <div id="pdf-viewer"></div>
