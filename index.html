@@ -24,7 +24,16 @@
             </div>
         </header>
 
-        <div id="content-area">
+        <div id="welcome-screen">
+            <i class="fas fa-file-pdf welcome-icon"></i>
+            <h2>Welcome to Pro PDF Editor</h2>
+            <p>Drag & drop a PDF file here or click the button below to upload.</p>
+            <button id="welcome-upload-btn" class="toolbar-button">
+                <i class="fas fa-upload"></i> Upload PDF
+            </button>
+        </div>
+
+        <div id="content-area" class="hidden">
             <aside id="vertical-toolbar">
                 <button id="add-text-btn" class="toolbar-button" title="Add Text"><i class="fas fa-font"></i></button>
                 <button id="add-image-btn" class="toolbar-button" title="Add Image"><i class="fas fa-image"></i></button>

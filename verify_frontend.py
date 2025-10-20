@@ -11,28 +11,16 @@ async def main():
         file_path = os.path.abspath('index.html')
         await page.goto(f'file://{file_path}')
 
-        # Upload the test PDF
-        await page.click('#upload-btn')
+        # Verify that the welcome screen is visible
+        await page.wait_for_selector('#welcome-screen')
+
+        # Upload the test PDF using the welcome screen button
+        await page.click('#welcome-upload-btn')
         await page.set_input_files('input[type="file"]#file-input', 'test.pdf')
 
-        # Wait for the PDF to be rendered
-        await page.wait_for_selector('canvas')
-
-        # Click the "Draw" button
-        await page.click('#draw-btn')
-
-        # Draw a line on the first page
-        drawing_canvas = await page.query_selector('.drawing-canvas[data-page-number="1"]')
-        bounding_box = await drawing_canvas.bounding_box()
-        await page.mouse.move(bounding_box['x'] + 20, bounding_box['y'] + 20)
-        await page.mouse.down()
-        await page.mouse.move(bounding_box['x'] + 100, bounding_box['y'] + 100)
-        await page.mouse.up()
-
-        # Save the drawing
-        await page.click('#save-draw-btn')
-
-        # Wait for the PDF to be re-rendered
+        # Wait for the welcome screen to be hidden and the editor to be visible
+        await page.wait_for_selector('#welcome-screen', state='hidden')
+        await page.wait_for_selector('#content-area')
         await page.wait_for_selector('canvas')
 
         # Take a screenshot for visual confirmation

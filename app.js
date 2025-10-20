@@ -14,6 +14,38 @@ document.getElementById('upload-btn').addEventListener('click', () => {
     document.getElementById('file-input').click();
 });
 
+document.getElementById('welcome-upload-btn').addEventListener('click', () => {
+    document.getElementById('file-input').click();
+});
+
+const welcomeScreen = document.getElementById('welcome-screen');
+
+welcomeScreen.addEventListener('dragover', (event) => {
+    event.preventDefault();
+    welcomeScreen.style.backgroundColor = '#e0e0e0';
+});
+
+welcomeScreen.addEventListener('dragleave', (event) => {
+    event.preventDefault();
+    welcomeScreen.style.backgroundColor = 'var(--secondary-bg)';
+});
+
+welcomeScreen.addEventListener('drop', (event) => {
+    event.preventDefault();
+    welcomeScreen.style.backgroundColor = 'var(--secondary-bg)';
+    const file = event.dataTransfer.files[0];
+    if (file && file.type === 'application/pdf') {
+        const fileReader = new FileReader();
+        fileReader.onload = function() {
+            currentPdfBytes = new Uint8Array(this.result);
+            renderPdf(currentPdfBytes);
+        };
+        fileReader.readAsArrayBuffer(file);
+    } else {
+        alert('Please drop a valid PDF file.');
+    }
+});
+
 document.getElementById('file-input').addEventListener('change', (event) => {
     const file = event.target.files[0];
     if (file && file.type === 'application/pdf') {
@@ -461,6 +493,9 @@ function renderTextElements() {
 
 
 function renderPdf(pdfBytes) {
+    document.getElementById('welcome-screen').classList.add('hidden');
+    document.getElementById('content-area').classList.remove('hidden');
+
     const loadingTask = pdfjsLib.getDocument(pdfBytes);
     loadingTask.promise.then(pdf => {
         const viewer = document.getElementById('pdf-viewer');

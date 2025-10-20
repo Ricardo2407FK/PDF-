@@ -102,6 +102,38 @@ body {
     gap: 10px;
 }
 
+/* Welcome Screen */
+#welcome-screen {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 40px;
+    border: 2px dashed var(--border-color);
+    border-radius: 10px;
+    background-color: var(--secondary-bg);
+    margin: auto;
+}
+
+.welcome-icon {
+    font-size: 5rem;
+    color: var(--toolbar-bg);
+    margin-bottom: 20px;
+}
+
+#welcome-upload-btn {
+    background-color: var(--toolbar-bg);
+    color: var(--text-light);
+    padding: 15px 30px;
+    border-radius: 5px;
+    font-size: 1.2rem;
+}
+
+#welcome-upload-btn:hover {
+    background-color: var(--hover-bg);
+}
+
 .hidden {
     display: none !important;
 }
