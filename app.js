@@ -58,8 +58,17 @@ document.getElementById('add-text-btn').addEventListener('click', () => {
     textAddMode = !textAddMode;
 });
 
-document.getElementById('pdf-viewer').addEventListener('click', (event) => {
-    if (textAddMode) {
+document.getElementById('pdf-viewer').addEventListener('click', async (event) => {
+    if (event.target.classList.contains('delete-page-btn')) {
+        const pageNum = parseInt(event.target.dataset.pageNumber, 10);
+        if (confirm(`Are you sure you want to delete page ${pageNum}?`)) {
+            const { PDFDocument } = PDFLib;
+            const pdfDoc = await PDFDocument.load(currentPdfBytes);
+            pdfDoc.removePage(pageNum - 1);
+            currentPdfBytes = await pdfDoc.save();
+            renderPdf(currentPdfBytes);
+        }
+    } else if (textAddMode) {
         event.stopPropagation();
         const targetOverlay = event.target.closest('.text-overlay');
         if (!targetOverlay) return;
@@ -252,8 +261,14 @@ function renderPdf(pdfBytes) {
                     textOverlay.style.height = `${viewport.height}px`;
                     textOverlay.style.width = `${viewport.width}px`;
 
+                    const deleteButton = document.createElement('button');
+                    deleteButton.className = 'delete-page-btn';
+                    deleteButton.textContent = 'Delete';
+                    deleteButton.setAttribute('data-page-number', pageNum);
+
                     pageContainer.appendChild(canvas);
                     pageContainer.appendChild(textOverlay);
+                    pageContainer.appendChild(deleteButton);
                     viewer.appendChild(pageContainer);
 
                     renderTextElements();

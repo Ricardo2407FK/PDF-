@@ -17,17 +17,11 @@ async def main():
         # Wait for the PDF to be rendered
         await page.wait_for_selector('canvas')
 
-        # Type text into the input field
-        await page.fill('#text-input', 'This is a test')
+        # Handle the confirm dialog
+        page.on("dialog", lambda dialog: dialog.accept())
 
-        # Click the button to enter text adding mode
-        await page.click('#add-text-btn')
-
-        # Click on the canvas of the first page to place the new text
-        await page.click('canvas[data-page-number="1"]')
-
-        # Save the text
-        await page.click('#save-text-btn')
+        # Click the delete button on the second page
+        await page.click('.delete-page-btn[data-page-number="2"]')
 
         # Wait for the PDF to be re-rendered
         await page.wait_for_selector('canvas')
