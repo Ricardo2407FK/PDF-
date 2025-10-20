@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pro PDF Editor</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.6.347/pdf.min.js"></script>
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+</head>
+<body>
+    <div id="app-container">
+        <header id="main-toolbar">
+            <div class="toolbar-section">
+                <button id="upload-btn" class="toolbar-button" title="Upload PDF"><i class="fas fa-upload"></i></button>
+                <input type="file" id="file-input" accept="application/pdf" style="display: none;">
+                <button id="download-btn" class="toolbar-button" title="Download PDF"><i class="fas fa-download"></i></button>
+            </div>
+            <h1 id="app-title">Pro PDF Editor</h1>
+            <div class="toolbar-section">
+                <button id="add-page-btn" class="toolbar-button" title="Add Page"><i class="fas fa-plus-square"></i></button>
+            </div>
+        </header>
+
+        <div id="welcome-screen">
+            <i class="fas fa-file-pdf welcome-icon"></i>
+            <h2>Welcome to Pro PDF Editor</h2>
+            <p>Drag & drop a PDF file here or click the button below to upload.</p>
+            <button id="welcome-upload-btn" class="toolbar-button">
+                <i class="fas fa-upload"></i> Upload PDF
+            </button>
+        </div>
+
+        <div id="content-area" class="hidden">
+            <aside id="page-thumbnail-sidebar">
+                <div id="thumbnail-container"></div>
+            </aside>
+            <aside id="vertical-toolbar">
+                <button id="add-text-btn" class="toolbar-button" title="Add Text"><i class="fas fa-font"></i></button>
+                <button id="add-image-btn" class="toolbar-button" title="Add Image"><i class="fas fa-image"></i></button>
+                <button id="draw-btn" class="toolbar-button" title="Draw"><i class="fas fa-pencil-alt"></i></button>
+                <button id="add-rect-btn" class="toolbar-button" title="Add Rectangle"><i class="fas fa-square"></i></button>
+                <button id="add-circle-btn" class="toolbar-button" title="Add Circle"><i class="fas fa-circle"></i></button>
+                <input type="file" id="image-input" accept="image/jpeg, image/png" style="display: none;">
+            </aside>
+
+            <main id="viewer-container">
+                <div id="context-toolbar" class="hidden">
+                    <!-- Text Controls -->
+                    <div id="text-controls" class="context-controls hidden">
+                        <input type="text" id="text-input" placeholder="Enter text">
+                        <select id="font-select">
+                            <option value="Helvetica">Helvetica</option>
+                            <option value="TimesRoman">Times New Roman</option>
+                            <option value="Courier">Courier</option>
+                        </select>
+                        <input type="number" id="font-size-input" value="12" min="1">
+                        <input type="color" id="font-color-input" value="#000000">
+                        <button id="delete-text-btn" class="toolbar-button"><i class="fas fa-trash"></i></button>
+                    </div>
+                    <!-- Image Controls -->
+                    <div id="image-controls" class="context-controls hidden">
+                    </div>
+                    <!-- Drawing Controls -->
+                    <div id="draw-controls" class="context-controls hidden">
+                        <input type="color" id="draw-color-input" value="#FF0000">
+                        <input type="number" id="draw-thickness-input" value="2" min="1">
+                    </div>
+                    <!-- Shape Controls -->
+                    <div id="shape-controls" class="context-controls hidden">
+                        <label>Fill:</label>
+                        <input type="color" id="shape-fill-color-input" value="#FF0000">
+                        <label>Border:</label>
+                        <input type="color" id="shape-border-color-input" value="#000000">
+                        <input type="number" id="shape-border-thickness-input" value="2" min="1">
+                    </div>
+                </div>
+                <div id="pdf-viewer"></div>
+            </main>
+        </div>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>

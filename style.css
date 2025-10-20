@@ -1,0 +1,166 @@
+:root {
+    --primary-bg: #F5F7FA;
+    --secondary-bg: #FFFFFF;
+    --toolbar-bg: #34495E;
+    --hover-bg: #4A6572;
+    --text-light: #FFFFFF;
+    --text-dark: #2C3E50;
+    --border-color: #DDE1E6;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    background-color: var(--primary-bg);
+    color: var(--text-dark);
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+}
+
+#app-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+/* --- TOOLBARS --- */
+#main-toolbar {
+    background-color: var(--toolbar-bg);
+    color: var(--text-light);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    z-index: 100;
+}
+
+#app-title { font-size: 1.5rem; font-weight: 600; }
+.toolbar-section { display: flex; align-items: center; }
+
+.toolbar-button {
+    background: none; border: none;
+    color: var(--text-light);
+    font-size: 1.2rem; padding: 15px;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
+}
+.toolbar-button:hover { background-color: var(--hover-bg); }
+
+/* --- CONTENT AREA --- */
+#content-area {
+    display: flex;
+    flex-grow: 1;
+    overflow: hidden;
+}
+
+/* Page Thumbnails Sidebar */
+#page-thumbnail-sidebar {
+    background-color: var(--secondary-bg);
+    border-right: 1px solid var(--border-color);
+    padding: 10px;
+    overflow-y: auto;
+    width: 200px;
+    z-index: 50;
+}
+#thumbnail-container { display: flex; flex-direction: column; gap: 10px; }
+.thumbnail-item { position: relative; border: 1px solid var(--border-color); cursor: pointer; }
+.thumbnail-item canvas { width: 100%; height: auto; display: block; }
+.delete-thumbnail-icon {
+    position: absolute; top: 5px; right: 5px;
+    color: red; cursor: pointer; display: none;
+    background-color: rgba(255,255,255,0.7);
+    border-radius: 50%; padding: 3px;
+}
+.thumbnail-item:hover .delete-thumbnail-icon { display: block; }
+
+/* Vertical Tools Toolbar */
+#vertical-toolbar {
+    background-color: var(--secondary-bg);
+    border-right: 1px solid var(--border-color);
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    z-index: 50;
+}
+#vertical-toolbar .toolbar-button { color: var(--text-dark); }
+
+/* Main Viewer Container */
+#viewer-container {
+    flex-grow: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    position: relative; /* For welcome screen positioning */
+}
+
+/* Context Toolbar */
+#context-toolbar {
+    background-color: var(--secondary-bg);
+    border-bottom: 1px solid var(--border-color);
+    padding: 10px;
+    margin-bottom: 20px;
+}
+.context-controls { display: flex; align-items: center; gap: 10px; }
+
+/* --- WELCOME SCREEN --- */
+#welcome-screen {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 40px;
+    border: 2px dashed var(--border-color);
+    border-radius: 10px;
+    background-color: var(--secondary-bg);
+    margin: auto; /* Center in the container */
+}
+.welcome-icon { font-size: 5rem; color: var(--toolbar-bg); margin-bottom: 20px; }
+#welcome-upload-btn {
+    background-color: var(--toolbar-bg); color: var(--text-light);
+    padding: 15px 30px; border-radius: 5px; font-size: 1.2rem;
+}
+#welcome-upload-btn:hover { background-color: var(--hover-bg); }
+#welcome-screen.dragging-over { border-color: var(--toolbar-bg); }
+
+/* --- PDF VIEWER & LAYERS --- */
+#pdf-viewer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    padding: 0 20px 20px 20px; /* Add padding for shadow */
+}
+
+.page-container {
+    position: relative;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    background-color: white; /* Ensure canvas has a background */
+}
+
+.page-container > canvas { z-index: 10; } /* PDF canvas */
+
+.text-overlay {
+    position: absolute; top: 0; left: 0;
+    z-index: 20; /* Above PDF, below drawing */
+    pointer-events: none; /* Crucial: only clickable when a tool is active */
+}
+
+.drawing-canvas {
+    position: absolute; top: 0; left: 0;
+    z-index: 30; /* Above text overlay */
+    pointer-events: auto; /* Always clickable when visible */
+    display: none; /* Hidden by default */
+}
+
+/* Interactive elements within the text overlay */
+.text-overlay > div, .shape-container, .image-container {
+    pointer-events: auto; /* These are always clickable */
+    cursor: move;
+}
+.selected { border: 2px dashed var(--toolbar-bg) !important; }
+
+.hidden { display: none !important; }
