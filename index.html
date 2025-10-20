@@ -12,6 +12,19 @@
     <header>
         <h1>Online PDF Editor</h1>
     </header>
+    <div id="toolbar">
+        <button id="add-text-btn">Add Text</button>
+        <input type="text" id="text-input" placeholder="Enter text here">
+        <select id="font-select">
+            <option value="Helvetica">Helvetica</option>
+            <option value="TimesRoman">Times New Roman</option>
+            <option value="Courier">Courier</option>
+        </select>
+        <input type="number" id="font-size-input" value="12">
+        <input type="color" id="font-color-input" value="#000000">
+        <button id="save-text-btn">Save Text</button>
+        <button id="delete-text-btn">Delete</button>
+    </div>
     <main>
         <div id="pdf-viewer-container">
             <input type="file" id="file-input" accept="application/pdf">

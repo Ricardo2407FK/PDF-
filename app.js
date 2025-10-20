@@ -2,6 +2,11 @@
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.6.347/pdf.worker.min.js';
 
 let currentPdfBytes = null; // This will hold the bytes of the currently loaded PDF
+let textAddMode = false;
+let fontCache = {};
+let selectedElement = null;
+let offsetX, offsetY;
+let textElementsState = [];
 
 document.getElementById('file-input').addEventListener('change', (event) => {
     const file = event.target.files[0];
@@ -28,6 +33,7 @@ document.getElementById('add-page-btn').addEventListener('click', async () => {
     pdfDoc.addPage(); // Adds a blank A4 page by default
 
     currentPdfBytes = await pdfDoc.save();
+    textElementsState = []; // Clear the state after saving
     renderPdf(currentPdfBytes);
 });
 
@@ -48,14 +54,188 @@ document.getElementById('download-btn').addEventListener('click', () => {
     URL.revokeObjectURL(url);
 });
 
+document.getElementById('add-text-btn').addEventListener('click', () => {
+    textAddMode = !textAddMode;
+});
+
+document.getElementById('pdf-viewer').addEventListener('click', (event) => {
+    if (textAddMode) {
+        event.stopPropagation();
+        const targetOverlay = event.target.closest('.text-overlay');
+        if (!targetOverlay) return;
+
+        const rect = targetOverlay.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+        const pageNum = parseInt(targetOverlay.dataset.pageNumber, 10);
+
+        const text = document.getElementById('text-input').value;
+        const font = document.getElementById('font-select').value;
+        const fontSize = parseInt(document.getElementById('font-size-input').value, 10);
+        const color = document.getElementById('font-color-input').value;
+
+        const id = `text-${Date.now()}`;
+
+        textElementsState.push({ id, text, x, y, font, fontSize, color, pageNum });
+        renderTextElements();
+
+    } else {
+        if (event.target.contentEditable) {
+            if (selectedElement) {
+                selectedElement.classList.remove('selected');
+            }
+            selectedElement = event.target;
+            selectedElement.classList.add('selected');
+            updateToolbarWithSelectedTextStyle();
+        }
+    }
+});
+
+function makeDraggableAndSelectable(element) {
+    element.addEventListener('mousedown', (e) => {
+        e.stopPropagation();
+        if (textAddMode) return;
+        if (selectedElement) {
+            selectedElement.classList.remove('selected');
+        }
+        selectedElement = element;
+        selectedElement.classList.add('selected');
+        updateToolbarWithSelectedTextStyle();
+
+        offsetX = e.clientX - element.getBoundingClientRect().left;
+        offsetY = e.clientY - element.getBoundingClientRect().top;
+        document.body.classList.add('dragging');
+    });
+}
+
+document.addEventListener('mousemove', (e) => {
+    if (!selectedElement || !document.body.classList.contains('dragging')) return;
+    const x = e.clientX - offsetX;
+    const y = e.clientY - offsetY;
+    selectedElement.style.left = `${x}px`;
+    selectedElement.style.top = `${y}px`;
+
+    const state = textElementsState.find(s => s.id === selectedElement.id);
+    state.x = x;
+    state.y = y;
+});
+
+document.addEventListener('mouseup', () => {
+    document.body.classList.remove('dragging');
+});
+
+document.getElementById('delete-text-btn').addEventListener('click', () => {
+    if (selectedElement) {
+        textElementsState = textElementsState.filter(s => s.id !== selectedElement.id);
+        selectedElement.remove();
+        selectedElement = null;
+    }
+});
+
+document.getElementById('font-select').addEventListener('change', (e) => {
+    if (selectedElement) {
+        selectedElement.style.fontFamily = e.target.value;
+        const state = textElementsState.find(s => s.id === selectedElement.id);
+        state.font = e.target.value;
+    }
+});
+
+document.getElementById('font-size-input').addEventListener('input', (e) => {
+    if (selectedElement) {
+        selectedElement.style.fontSize = `${e.target.value}px`;
+        const state = textElementsState.find(s => s.id === selectedElement.id);
+        state.fontSize = parseInt(e.target.value, 10);
+    }
+});
+
+document.getElementById('font-color-input').addEventListener('input', (e) => {
+    if (selectedElement) {
+        selectedElement.style.color = e.target.value;
+        const state = textElementsState.find(s => s.id === selectedElement.id);
+        state.color = e.target.value;
+    }
+});
+
+function updateToolbarWithSelectedTextStyle() {
+    if (!selectedElement) return;
+    const state = textElementsState.find(s => s.id === selectedElement.id);
+    document.getElementById('font-select').value = state.font;
+    document.getElementById('font-size-input').value = state.fontSize;
+    document.getElementById('font-color-input').value = state.color;
+}
+
+document.getElementById('save-text-btn').addEventListener('click', async () => {
+    if (!currentPdfBytes) {
+        alert("Please load a PDF first.");
+        return;
+    }
+
+    const { PDFDocument, StandardFonts, rgb } = PDFLib;
+    const pdfDoc = await PDFDocument.load(currentPdfBytes);
+
+    for (const textItem of textElementsState) {
+        if (!fontCache[textItem.font]) {
+            fontCache[textItem.font] = await pdfDoc.embedFont(StandardFonts[textItem.font]);
+        }
+        const page = pdfDoc.getPage(textItem.pageNum - 1);
+        const font = fontCache[textItem.font];
+
+        const r = parseInt(textItem.color.slice(1, 3), 16) / 255;
+        const g = parseInt(textItem.color.slice(3, 5), 16) / 255;
+        const b = parseInt(textItem.color.slice(5, 7), 16) / 255;
+
+        page.drawText(textItem.text, {
+            x: textItem.x,
+                // The y-coordinate in pdf-lib is measured from the bottom of the page,
+                // but the y-coordinate in the HTML overlay is measured from the top.
+                // This calculation converts the overlay's y-coordinate to the PDF's y-coordinate.
+                y: page.getHeight() - textItem.y - textItem.fontSize,
+            font: font,
+            size: textItem.fontSize,
+            color: rgb(r, g, b),
+        });
+    }
+
+    currentPdfBytes = await pdfDoc.save();
+    renderPdf(currentPdfBytes);
+});
+
+function renderTextElements() {
+    const overlays = document.querySelectorAll('.text-overlay');
+    overlays.forEach(overlay => overlay.innerHTML = '');
+
+    for (const state of textElementsState) {
+        const overlay = document.querySelector(`.text-overlay[data-page-number="${state.pageNum}"]`);
+        const textElement = document.createElement('div');
+        textElement.id = state.id;
+        textElement.contentEditable = true;
+        textElement.style.position = 'absolute';
+        textElement.style.left = `${state.x}px`;
+        textElement.style.top = `${state.y}px`;
+        textElement.style.fontFamily = state.font;
+        textElement.style.fontSize = `${state.fontSize}px`;
+        textElement.style.color = state.color;
+        textElement.innerText = state.text;
+
+        overlay.appendChild(textElement);
+        makeDraggableAndSelectable(textElement);
+    }
+}
+
+
 function renderPdf(pdfBytes) {
     const loadingTask = pdfjsLib.getDocument(pdfBytes);
     loadingTask.promise.then(pdf => {
         const viewer = document.getElementById('pdf-viewer');
         viewer.innerHTML = ''; // Clear previous content
+        fontCache = {}; // Clear the font cache when a new PDF is rendered
         for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
             pdf.getPage(pageNum).then(page => {
+                const pageContainer = document.createElement('div');
+                pageContainer.className = 'page-container';
+
                 const canvas = document.createElement('canvas');
+                canvas.setAttribute('data-page-number', pageNum);
                 const context = canvas.getContext('2d');
                 const viewport = page.getViewport({ scale: 1.5 });
                 canvas.height = viewport.height;
@@ -65,8 +245,19 @@ function renderPdf(pdfBytes) {
                     canvasContext: context,
                     viewport: viewport
                 };
-                page.render(renderContext);
-                viewer.appendChild(canvas);
+                page.render(renderContext).promise.then(() => {
+                    const textOverlay = document.createElement('div');
+                    textOverlay.className = 'text-overlay';
+                    textOverlay.setAttribute('data-page-number', pageNum);
+                    textOverlay.style.height = `${viewport.height}px`;
+                    textOverlay.style.width = `${viewport.width}px`;
+
+                    pageContainer.appendChild(canvas);
+                    pageContainer.appendChild(textOverlay);
+                    viewer.appendChild(pageContainer);
+
+                    renderTextElements();
+                });
             });
         }
     });
