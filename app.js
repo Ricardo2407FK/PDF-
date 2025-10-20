@@ -4,11 +4,13 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs
 let currentPdfBytes = null; // This will hold the bytes of the currently loaded PDF
 let textAddMode = false;
 let drawMode = false;
+let shapeMode = null; // Can be 'rect', 'circle', etc.
 let fontCache = {};
 let selectedElement = null;
 let offsetX, offsetY;
 let textElementsState = [];
 let imageElementsState = [];
+let shapeElementsState = [];
 
 document.getElementById('upload-btn').addEventListener('click', () => {
     document.getElementById('file-input').click();
@@ -103,6 +105,7 @@ document.getElementById('add-image-btn').addEventListener('click', () => {
 
 document.getElementById('draw-btn').addEventListener('click', () => {
     drawMode = !drawMode;
+    shapeMode = null;
     updateContextToolbar();
 
     const drawingCanvases = document.querySelectorAll('.drawing-canvas');
@@ -112,6 +115,20 @@ document.getElementById('draw-btn').addEventListener('click', () => {
             setupDrawingCanvas(canvas);
         }
     });
+});
+
+document.getElementById('add-rect-btn').addEventListener('click', () => {
+    shapeMode = 'rect';
+    drawMode = false;
+    textAddMode = false;
+    updateContextToolbar();
+});
+
+document.getElementById('add-circle-btn').addEventListener('click', () => {
+    shapeMode = 'circle';
+    drawMode = false;
+    textAddMode = false;
+    updateContextToolbar();
 });
 
 let drawing = false;
@@ -140,42 +157,6 @@ function setupDrawingCanvas(canvas) {
     canvas.addEventListener('mouseout', () => drawing = false);
 }
 
-document.getElementById('save-draw-btn').addEventListener('click', async () => {
-    if (!currentPdfBytes) {
-        alert("Please load a PDF first.");
-        return;
-    }
-
-    const { PDFDocument } = PDFLib;
-    const pdfDoc = await PDFDocument.load(currentPdfBytes);
-
-    const drawingCanvases = document.querySelectorAll('.drawing-canvas');
-    for (const canvas of drawingCanvases) {
-        const pageNum = parseInt(canvas.dataset.pageNumber, 10);
-        const page = pdfDoc.getPage(pageNum - 1);
-
-        const pngImageBytes = await new Promise(resolve => canvas.toBlob(blob => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(new Uint8Array(reader.result));
-            reader.readAsArrayBuffer(blob);
-        }, 'image/png'));
-
-        const pngImage = await pdfDoc.embedPng(pngImageBytes);
-
-        page.drawImage(pngImage, {
-            x: 0,
-            y: 0,
-            width: page.getWidth(),
-            height: page.getHeight(),
-        });
-    }
-
-    currentPdfBytes = await pdfDoc.save();
-    drawMode = false;
-    updateContextToolbar();
-    renderPdf(currentPdfBytes);
-});
-
 document.getElementById('image-input').addEventListener('change', (event) => {
     const file = event.target.files[0];
     if (file && (file.type === 'image/jpeg' || file.type === 'image/png')) {
@@ -202,7 +183,33 @@ document.getElementById('image-input').addEventListener('change', (event) => {
 });
 
 document.getElementById('pdf-viewer').addEventListener('click', async (event) => {
-    if (event.target.classList.contains('delete-page-btn')) {
+    if (shapeMode) {
+        const targetOverlay = event.target.closest('.text-overlay');
+        if (!targetOverlay) return;
+
+        const rect = targetOverlay.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+        const pageNum = parseInt(targetOverlay.dataset.pageNumber, 10);
+
+        const id = `shape-${Date.now()}`;
+        const shape = {
+            id,
+            type: shapeMode,
+            x,
+            y,
+            width: 100,
+            height: 100,
+            fill: document.getElementById('shape-fill-color-input').value,
+            border: document.getElementById('shape-border-color-input').value,
+            borderWidth: parseInt(document.getElementById('shape-border-thickness-input').value, 10),
+            pageNum
+        };
+        shapeElementsState.push(shape);
+        renderShapeElements();
+        shapeMode = null;
+        updateContextToolbar();
+    } else if (event.target.classList.contains('delete-page-btn')) {
         const pageNum = parseInt(event.target.dataset.pageNumber, 10);
         if (confirm(`Are you sure you want to delete page ${pageNum}?`)) {
             const { PDFDocument } = PDFLib;
@@ -316,7 +323,7 @@ function updateToolbarWithSelectedTextStyle() {
     document.getElementById('font-color-input').value = state.color;
 }
 
-document.getElementById('save-text-btn').addEventListener('click', async () => {
+document.getElementById('apply-changes-btn').addEventListener('click', async () => {
     if (!currentPdfBytes) {
         alert("Please load a PDF first.");
         return;
@@ -325,6 +332,7 @@ document.getElementById('save-text-btn').addEventListener('click', async () => {
     const { PDFDocument, StandardFonts, rgb } = PDFLib;
     const pdfDoc = await PDFDocument.load(currentPdfBytes);
 
+    // Embed text
     for (const textItem of textElementsState) {
         if (!fontCache[textItem.font]) {
             fontCache[textItem.font] = await pdfDoc.embedFont(StandardFonts[textItem.font]);
@@ -338,29 +346,14 @@ document.getElementById('save-text-btn').addEventListener('click', async () => {
 
         page.drawText(textItem.text, {
             x: textItem.x,
-                // The y-coordinate in pdf-lib is measured from the bottom of the page,
-                // but the y-coordinate in the HTML overlay is measured from the top.
-                // This calculation converts the overlay's y-coordinate to the PDF's y-coordinate.
-                y: page.getHeight() - textItem.y - textItem.fontSize,
+            y: page.getHeight() - textItem.y - textItem.fontSize,
             font: font,
             size: textItem.fontSize,
             color: rgb(r, g, b),
         });
     }
 
-    currentPdfBytes = await pdfDoc.save();
-    renderPdf(currentPdfBytes);
-});
-
-document.getElementById('save-images-btn').addEventListener('click', async () => {
-    if (!currentPdfBytes) {
-        alert("Please load a PDF first.");
-        return;
-    }
-
-    const { PDFDocument } = PDFLib;
-    const pdfDoc = await PDFDocument.load(currentPdfBytes);
-
+    // Embed images
     for (const imageState of imageElementsState) {
         const page = pdfDoc.getPage(imageState.pageNum - 1);
         const imageBytes = await fetch(imageState.src).then(res => res.arrayBuffer());
@@ -374,8 +367,73 @@ document.getElementById('save-images-btn').addEventListener('click', async () =>
         });
     }
 
+    // Embed drawings
+    const drawingCanvases = document.querySelectorAll('.drawing-canvas');
+    for (const canvas of drawingCanvases) {
+        const pageNum = parseInt(canvas.dataset.pageNumber, 10);
+        const page = pdfDoc.getPage(pageNum - 1);
+
+        const pngImageBytes = await new Promise(resolve => canvas.toBlob(blob => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(new Uint8Array(reader.result));
+            reader.readAsArrayBuffer(blob);
+        }, 'image/png'));
+
+        if (pngImageBytes.length > 0) {
+            const pngImage = await pdfDoc.embedPng(pngImageBytes);
+            page.drawImage(pngImage, {
+                x: 0,
+                y: 0,
+                width: page.getWidth(),
+                height: page.getHeight(),
+            });
+        }
+    }
+
+    // Embed shapes
+    for (const shape of shapeElementsState) {
+        const page = pdfDoc.getPage(shape.pageNum - 1);
+        const { width, height } = page.getSize();
+        const r = parseInt(shape.fill.slice(1, 3), 16) / 255;
+        const g = parseInt(shape.fill.slice(3, 5), 16) / 255;
+        const b = parseInt(shape.fill.slice(5, 7), 16) / 255;
+        const br = parseInt(shape.border.slice(1, 3), 16) / 255;
+        const bg = parseInt(shape.border.slice(3, 5), 16) / 255;
+        const bb = parseInt(shape.border.slice(5, 7), 16) / 255;
+
+        if (shape.type === 'rect') {
+            page.drawRectangle({
+                x: shape.x,
+                y: height - shape.y - shape.height,
+                width: shape.width,
+                height: shape.height,
+                color: rgb(r, g, b),
+                borderColor: rgb(br, bg, bb),
+                borderWidth: shape.borderWidth,
+            });
+        } else if (shape.type === 'circle') {
+            page.drawCircle({
+                x: shape.x + shape.width / 2,
+                y: height - shape.y - shape.height / 2,
+                size: Math.min(shape.width, shape.height) / 2,
+                color: rgb(r, g, b),
+                borderColor: rgb(br, bg, bb),
+                borderWidth: shape.borderWidth,
+            });
+        }
+    }
+
     currentPdfBytes = await pdfDoc.save();
-    imageElementsState = []; // Clear the state after saving
+
+    // Clear all states
+    textElementsState = [];
+    imageElementsState = [];
+    shapeElementsState = [];
+    textAddMode = false;
+    drawMode = false;
+    shapeMode = null;
+
+    updateContextToolbar();
     renderPdf(currentPdfBytes);
 });
 
@@ -384,11 +442,13 @@ function updateContextToolbar(activeTool = null) {
     const textControls = document.getElementById('text-controls');
     const imageControls = document.getElementById('image-controls');
     const drawControls = document.getElementById('draw-controls');
+    const shapeControls = document.getElementById('shape-controls');
 
     // Hide all controls by default
     textControls.classList.add('hidden');
     imageControls.classList.add('hidden');
     drawControls.classList.add('hidden');
+    shapeControls.classList.add('hidden');
     contextToolbar.classList.add('hidden');
 
     if (textAddMode) {
@@ -399,6 +459,9 @@ function updateContextToolbar(activeTool = null) {
         contextToolbar.classList.remove('hidden');
     } else if (drawMode) {
         drawControls.classList.remove('hidden');
+        contextToolbar.classList.remove('hidden');
+    } else if (shapeMode) {
+        shapeControls.classList.remove('hidden');
         contextToolbar.classList.remove('hidden');
     }
 }
@@ -438,7 +501,12 @@ function makeDraggableAndResizable(element) {
             listeners: {
                 move(event) {
                     const target = event.target;
-                    const state = imageElementsState.find(s => s.id === target.id);
+                    let state;
+                    if (target.classList.contains('image-container')) {
+                        state = imageElementsState.find(s => s.id === target.id);
+                    } else if (target.classList.contains('shape-container')) {
+                        state = shapeElementsState.find(s => s.id === target.id);
+                    }
                     state.x += event.dx;
                     state.y += event.dy;
                     target.style.left = `${state.x}px`;
@@ -458,7 +526,12 @@ function makeDraggableAndResizable(element) {
             listeners: {
                 move(event) {
                     const target = event.target;
-                    const state = imageElementsState.find(s => s.id === target.id);
+                    let state;
+                    if (target.classList.contains('image-container')) {
+                        state = imageElementsState.find(s => s.id === target.id);
+                    } else if (target.classList.contains('shape-container')) {
+                        state = shapeElementsState.find(s => s.id === target.id);
+                    }
                     state.width = event.rect.width;
                     state.height = event.rect.height;
                     target.style.width = `${state.width}px`;
@@ -469,9 +542,41 @@ function makeDraggableAndResizable(element) {
         });
 }
 
+function renderShapeElements() {
+    const overlays = document.querySelectorAll('.text-overlay');
+    overlays.forEach(overlay => {
+        // Clear only shape elements
+        overlay.querySelectorAll('.shape-container').forEach(el => el.remove());
+    });
+
+    for (const state of shapeElementsState) {
+        const overlay = document.querySelector(`.text-overlay[data-page-number="${state.pageNum}"]`);
+        const shapeContainer = document.createElement('div');
+        shapeContainer.id = state.id;
+        shapeContainer.className = 'shape-container';
+        shapeContainer.style.position = 'absolute';
+        shapeContainer.style.left = `${state.x}px`;
+        shapeContainer.style.top = `${state.y}px`;
+        shapeContainer.style.width = `${state.width}px`;
+        shapeContainer.style.height = `${state.height}px`;
+        shapeContainer.style.backgroundColor = state.fill;
+        shapeContainer.style.border = `${state.borderWidth}px solid ${state.border}`;
+
+        if (state.type === 'circle') {
+            shapeContainer.style.borderRadius = '50%';
+        }
+
+        overlay.appendChild(shapeContainer);
+        makeDraggableAndResizable(shapeContainer);
+    }
+}
+
 function renderTextElements() {
     const overlays = document.querySelectorAll('.text-overlay');
-    overlays.forEach(overlay => overlay.innerHTML = '');
+    overlays.forEach(overlay => {
+        // Clear only text elements
+        overlay.querySelectorAll('div[contenteditable="true"]').forEach(el => el.remove());
+    });
 
     for (const state of textElementsState) {
         const overlay = document.querySelector(`.text-overlay[data-page-number="${state.pageNum}"]`);
@@ -543,6 +648,8 @@ function renderPdf(pdfBytes) {
                     viewer.appendChild(pageContainer);
 
                     renderTextElements();
+                    renderImageElements();
+                    renderShapeElements();
                 });
             });
         }
